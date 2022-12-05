@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-2.txt");
+const input = @embedFile("real-input/day-2.txt");
 
 pub fn main() !void {
     var total_score: u32 = 0;
@@ -23,9 +23,9 @@ const games = [_]Game {
     .{ .string = "A Z", .score = 3 + 0 },
     .{ .string = "B X", .score = 1 + 0 },
     .{ .string = "B Y", .score = 2 + 3 },
-    .{ .string = "B Z", .score = 2 + 6 },
-    .{ .string = "C X", .score = 3 + 6 },
-    .{ .string = "C Y", .score = 3 + 0 },
+    .{ .string = "B Z", .score = 3 + 6 },
+    .{ .string = "C X", .score = 1 + 6 },
+    .{ .string = "C Y", .score = 2 + 0 },
     .{ .string = "C Z", .score = 3 + 3 },
 };
 
