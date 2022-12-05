@@ -6,7 +6,7 @@ pub fn main() !void {
     while (round_it.next()) |round| {
         for (games) |game| {
             if (std.mem.eql(u8, game.string, round)) {
-                std.debug.print("found game!\n", .{});
+                std.debug.print("{s} -> {d}\n", .{round, game.score});
             }
         }
     }
