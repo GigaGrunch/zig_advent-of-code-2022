@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-1.txt");
+const input = @embedFile("real-input/day-1.txt");
 
 pub fn main() !void {
     var max_calories = [_]u32 {0} ** 3;
