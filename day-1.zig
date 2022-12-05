@@ -1,10 +1,10 @@
 const std = @import("std");
-const test_input = @embedFile("test-input/day-1.txt");
+const input = @embedFile("real-input/day-1.txt");
 
 pub fn main() !void {
     var max_calories: u32 = 0;
 
-    var elf_it = std.mem.split(u8, test_input, "\n\n");
+    var elf_it = std.mem.split(u8, input, "\n\n");
     while (elf_it.next()) |elf| {
         std.debug.print("elf: ", .{});
         var total_calories: u32 = 0;
