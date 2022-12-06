@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-5.txt");
+const input = @embedFile("test-input/day-5.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -59,11 +59,17 @@ pub fn main() !void {
         const to = try std.fmt.parseInt(u32, part_it.next().?, 10);
         std.debug.print("{d}x {d} -> {d}\n", .{count, from, to});
 
+        var crane = std.ArrayList(u8).init(alloc);
+        defer crane.deinit();
+
         var i: u32 = 0;
         while (i < count):(i += 1) {
             const crate = stacks.items[from-1].pop();
-            try stacks.items[to-1].append(crate);
+            try crane.append(crate);
         }
+
+        std.mem.reverse(u8, crane.items);
+        try stacks.items[to-1].appendSlice(crane.items);
     }
 
     printStacks(stacks);
