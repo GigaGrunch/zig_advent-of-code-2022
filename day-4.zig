@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-4.txt");
+const input = @embedFile("real-input/day-4.txt");
 
 pub fn main() !void {
     var count: u32 = 0;
