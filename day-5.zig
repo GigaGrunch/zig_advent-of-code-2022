@@ -47,13 +47,23 @@ pub fn main() !void {
         }
     }
 
-    for (stacks.items) |stack, i| {
-        std.mem.reverse(u8, stack.items);
+    for (stacks.items) |stack| std.mem.reverse(u8, stack.items);
+    printStacks(stacks);
 
-        std.debug.print("stack {}: ", .{i});
+    var move_it = std.mem.tokenize(u8, moves, "\r\n");
+    while (move_it.next()) |move| {
+        var part_it = std.mem.tokenize(u8, move, "move from to");
+        const count = part_it.next().?;
+        const from = part_it.next().?;
+        const to = part_it.next().?;
+        std.debug.print("{s}x {s} -> {s}\n", .{count, from, to});
+    }
+}
+
+fn printStacks(stacks: std.ArrayList(std.ArrayList(u8))) void {
+    for (stacks.items) |stack, i| {
+        std.debug.print("stack {}: ", .{i+1});
         for (stack.items) |crate| std.debug.print("{c}", .{crate});
         std.debug.print("\n", .{});
     }
-
-    std.debug.print("moves:\n{s}\n", .{moves});
 }
