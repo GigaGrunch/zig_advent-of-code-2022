@@ -3,7 +3,11 @@ const input = @embedFile("test-input/day-3.txt");
 
 pub fn main() !void {
     var alloc = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = alloc.deinit();
     var set = std.AutoHashMap(u8, void).init(alloc.allocator());
+    defer set.deinit();
+
+    var total_prio: u32 = 0;
 
     var rucksack_it = std.mem.tokenize(u8, input, "\n");
     while (rucksack_it.next()) |rucksack| {
@@ -19,10 +23,13 @@ pub fn main() !void {
                     else => unreachable
                 };
                 std.debug.print("{c} -> {d}\n", .{item, prio});
+                total_prio += prio;
                 break;
             }
         }
 
         set.clearAndFree();
     }
+
+    std.debug.print("total prio = {d}\n", .{total_prio});
 }
