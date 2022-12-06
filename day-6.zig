@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-6.txt");
+const input = @embedFile("real-input/day-6.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
