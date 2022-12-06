@@ -1,5 +1,7 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-6.txt");
+const input = @embedFile("test-input/day-6.txt");
+
+const marker_length = 14;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -11,14 +13,16 @@ pub fn main() !void {
         var set = std.AutoHashMap(u8, void).init(alloc);
         defer set.deinit();
 
-        var marker: [4]u8 = .{ line[0], line[1], line[2], line[3] };
+        var marker: [marker_length]u8 = undefined;
 
-        var i: u32 = 4;
+        var i: u32 = 0;
+        while (i < marker_length):(i += 1) marker[i] = line[i];
+
         while (i < line.len):(i += 1) {
             defer set.clearAndFree();
             for (marker) |char| try set.put(char, undefined);
-            if (set.count() == 4) break;
-            marker[i % 4] = line[i];
+            if (set.count() == marker_length) break;
+            marker[i % marker_length] = line[i];
         }
 
         std.debug.print("count = {d}\n", .{i});
