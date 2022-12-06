@@ -10,26 +10,50 @@ pub fn main() !void {
     const initial_setup = split.next().?;
     const moves = split.next().?;
 
-    std.debug.print("setup:\n{s}\n", .{initial_setup});
-    std.debug.print("moves:\n{s}\n", .{moves});
-
     var stacks = std.ArrayList(std.ArrayList(u8)).init(alloc);
     defer {
         for (stacks.items) |stack| stack.deinit();
         stacks.deinit();
     }
 
+    var stack_height: u32 = 0;
+
     {
         var setup_lines_it = std.mem.tokenize(u8, initial_setup, "\r\n");
         var last_line: []const u8 = undefined;
         while (setup_lines_it.next()) |line| {
+            stack_height += 1;
             last_line = line;
         }
+        stack_height -= 1;
         var stack_number_it = std.mem.tokenize(u8, last_line, " ");
         while (stack_number_it.next()) |_| {
             try stacks.append(std.ArrayList(u8).init(alloc));
         }
     }
+    {
+        var i: u32 = 0;
+        var setup_lines_it = std.mem.tokenize(u8, initial_setup, "\r\n");
+        while (i < stack_height):(i += 1) {
+            const line = setup_lines_it.next().?;
 
-    std.debug.print("{d} stacks\n", .{stacks.items.len});
+            var stack_index: usize = 0;
+            while (stack_index < stacks.items.len):(stack_index += 1) {
+                const crate_pos = stack_index * 4 + 1;
+                if (line[crate_pos] != ' ') {
+                    try stacks.items[stack_index].append(line[crate_pos]);
+                }
+            }
+        }
+    }
+
+    for (stacks.items) |stack, i| {
+        std.mem.reverse(u8, stack.items);
+
+        std.debug.print("stack {}: ", .{i});
+        for (stack.items) |crate| std.debug.print("{c}", .{crate});
+        std.debug.print("\n", .{});
+    }
+
+    std.debug.print("moves:\n{s}\n", .{moves});
 }
