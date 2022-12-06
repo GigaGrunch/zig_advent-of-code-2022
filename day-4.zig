@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-4.txt");
+const input = @embedFile("test-input/day-4.txt");
 
 pub fn main() !void {
     var count: u32 = 0;
@@ -13,8 +13,8 @@ pub fn main() !void {
         const range_1 = try getRange(assign_1);
         const range_2 = try getRange(assign_2);
 
-        if ((range_1.min >= range_2.min and range_1.max <= range_2.max) or
-            (range_2.min >= range_1.min and range_2.max <= range_1.max)) {
+        if ((range_1.max >= range_2.min and range_1.min <= range_2.max) or
+            (range_2.max >= range_1.min and range_2.min <= range_1.max)) {
             count += 1;
         }
     }
