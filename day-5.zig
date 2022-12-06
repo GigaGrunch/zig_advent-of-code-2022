@@ -48,16 +48,29 @@ pub fn main() !void {
     }
 
     for (stacks.items) |stack| std.mem.reverse(u8, stack.items);
-    printStacks(stacks);
 
     var move_it = std.mem.tokenize(u8, moves, "\r\n");
     while (move_it.next()) |move| {
+        printStacks(stacks);
+
         var part_it = std.mem.tokenize(u8, move, "move from to");
-        const count = part_it.next().?;
-        const from = part_it.next().?;
-        const to = part_it.next().?;
-        std.debug.print("{s}x {s} -> {s}\n", .{count, from, to});
+        const count = try std.fmt.parseInt(u32, part_it.next().?, 10);
+        const from = try std.fmt.parseInt(u32, part_it.next().?, 10);
+        const to = try std.fmt.parseInt(u32, part_it.next().?, 10);
+        std.debug.print("{d}x {d} -> {d}\n", .{count, from, to});
+
+        var i: u32 = 0;
+        while (i < count):(i += 1) {
+            const crate = stacks.items[from-1].pop();
+            try stacks.items[to-1].append(crate);
+        }
     }
+
+    printStacks(stacks);
+
+    std.debug.print("result: ", .{});
+    for (stacks.items) |stack| std.debug.print("{c}", .{stack.items[stack.items.len - 1]});
+    std.debug.print("\n", .{});
 }
 
 fn printStacks(stacks: std.ArrayList(std.ArrayList(u8))) void {
