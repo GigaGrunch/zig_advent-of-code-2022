@@ -22,6 +22,7 @@ pub fn main() !void {
             dir.* = Dir {
                 .name = dir_name,
                 .parent = current_dir,
+                .size = 0,
                 .dirs = std.ArrayList(*Dir).init(alloc),
                 .files = std.ArrayList(File).init(alloc),
             };
@@ -37,37 +38,66 @@ pub fn main() !void {
             current_dir = dir;
         }
         else if (line.len == 4 and std.mem.eql(u8, line[0..4], "$ ls")) {
-            std.debug.print("list: {s}\n", .{line});
         }
         else if (line[0] >= '0' and line[0] <= '9') {
-            std.debug.print("File: {s}\n", .{line});
+            var file_it = std.mem.tokenize(u8, line, " ");
+            const size = try std.fmt.parseInt(u32, file_it.next().?, 10);
+            current_dir.?.addSize(size);
         }
         else if (line.len > 3 and std.mem.eql(u8, line[0..3], "dir")) {
-            std.debug.print("Dir: {s}\n", .{line});
         }
         else {
-            std.debug.print("Error at {s}\n", .{line});
         }
     }
 
     printDir(root_dir, 0);
+
+    var result = std.ArrayList(*Dir).init(alloc);
+    defer result.deinit();
+
+    const max_size: u32 = 100000;
+    var total_size: u32 = 0;
+
+    try findDirs(root_dir, max_size, &result);
+
+    std.debug.print("Dirs smaller than {d}:\n", .{max_size});
+    for (result.items) |dir| {
+        std.debug.print("{s} ({d})\n", .{dir.name, dir.size});
+        total_size += dir.size;
+    }
+
+    std.debug.print("total size = {d}\n", .{total_size});
 }
 
-fn printDir(dir: *Dir, indent: u32) void {
+fn printDir(root: *Dir, indent: u32) void {
     var i: u32 = 0;
     while (i < indent * 2):(i += 1) std.debug.print(" ", .{});
-    std.debug.print("- {s}\n", .{dir.name});
+    std.debug.print("- {s}\n", .{root.name});
 
-    for (dir.dirs.items) |subdir| {
-        printDir(subdir, indent + 1);
+    for (root.dirs.items) |dir| {
+        printDir(dir, indent + 1);
+    }
+}
+
+fn findDirs(root: *Dir, max_size: u32, result: *std.ArrayList(*Dir)) !void {
+    if (root.size <= max_size) try result.append(root);
+
+    for (root.dirs.items) |dir| {
+        try findDirs(dir, max_size, result);
     }
 }
 
 const Dir = struct {
     name: []const u8,
     parent: ?*Dir,
+    size: u32,
     dirs: std.ArrayList(*Dir),
     files: std.ArrayList(File),
+
+    pub fn addSize(this: *Dir, size: u32) void {
+        this.size += size;
+        if (this.parent) |p| p.addSize(size);
+    }
 
     pub fn deinit(this: *Dir, alloc: std.mem.Allocator) void {
         for (this.dirs.items) |dir| {
