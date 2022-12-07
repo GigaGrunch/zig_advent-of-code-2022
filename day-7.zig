@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-7.txt");
+const input = @embedFile("real-input/day-7.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -55,13 +55,16 @@ pub fn main() !void {
     var result = std.ArrayList(*Dir).init(alloc);
     defer result.deinit();
 
+    const disk_space: u32 = 70000000;
     const required_space: u32 = 30000000;
+    const used_space = root_dir.size;
+    const unused_space = disk_space - used_space;
 
-    try findDirs(root_dir, root_dir.size - required_space, &result);
+    try findDirs(root_dir, required_space - unused_space, &result);
 
     var smallest: *Dir = result.items[0];
 
-    std.debug.print("Dirs larger than {d}:\n", .{root_dir.size - required_space});
+    std.debug.print("Dirs larger than {d}:\n", .{required_space - unused_space});
     for (result.items) |dir| {
         std.debug.print("{s} ({d})\n", .{dir.name, dir.size});
         if (dir.size < smallest.size) smallest = dir;
