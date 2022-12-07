@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-7.txt");
+const input = @embedFile("test-input/day-7.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -55,35 +55,36 @@ pub fn main() !void {
     var result = std.ArrayList(*Dir).init(alloc);
     defer result.deinit();
 
-    const max_size: u32 = 100000;
-    var total_size: u32 = 0;
+    const required_space: u32 = 30000000;
 
-    try findDirs(root_dir, max_size, &result);
+    try findDirs(root_dir, root_dir.size - required_space, &result);
 
-    std.debug.print("Dirs smaller than {d}:\n", .{max_size});
+    var smallest: *Dir = result.items[0];
+
+    std.debug.print("Dirs larger than {d}:\n", .{root_dir.size - required_space});
     for (result.items) |dir| {
         std.debug.print("{s} ({d})\n", .{dir.name, dir.size});
-        total_size += dir.size;
+        if (dir.size < smallest.size) smallest = dir;
     }
 
-    std.debug.print("total size = {d}\n", .{total_size});
+    std.debug.print("{s} is the smallest ({d})\n", .{smallest.name, smallest.size});
 }
 
 fn printDir(root: *Dir, indent: u32) void {
     var i: u32 = 0;
     while (i < indent * 2):(i += 1) std.debug.print(" ", .{});
-    std.debug.print("- {s}\n", .{root.name});
+    std.debug.print("- {s} ({d})\n", .{root.name, root.size});
 
     for (root.dirs.items) |dir| {
         printDir(dir, indent + 1);
     }
 }
 
-fn findDirs(root: *Dir, max_size: u32, result: *std.ArrayList(*Dir)) !void {
-    if (root.size <= max_size) try result.append(root);
+fn findDirs(root: *Dir, min_size: u32, result: *std.ArrayList(*Dir)) !void {
+    if (root.size >= min_size) try result.append(root);
 
     for (root.dirs.items) |dir| {
-        try findDirs(dir, max_size, result);
+        try findDirs(dir, min_size, result);
     }
 }
 
