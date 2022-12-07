@@ -10,8 +10,11 @@ pub fn main() !void {
 
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
-        if (line[0] == '$') {
-            std.debug.print("Command: {s}\n", .{line});
+        if (std.mem.eql(u8, line[0..4], "$ cd")) {
+            std.debug.print("change dir: {s}\n", .{line});
+        }
+        else if (std.mem.eql(u8, line[0..4], "$ ls")) {
+            std.debug.print("list: {s}\n", .{line});
         }
         else if (line[0] >= '0' and line[0] <= '9') {
             std.debug.print("File: {s}\n", .{line});
