@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-8.txt");
+const input = @embedFile("test-input/day-8.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -15,86 +15,64 @@ pub fn main() !void {
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
         var row = std.ArrayList(Tree).init(alloc);
-        for (line) |height| try row.append(.{
-            .height = height - '0',
-            .visible = false,
-        });
+        for (line) |height| try row.append(.{.height = height - '0'});
         try rows.append(row);
     }
 
     const width = rows.items[0].items.len;
     const height = rows.items.len;
 
-    for (rows.items) |row| {
-        { // left to right
-            var maxHeight: i32 = -1;
-            for (row.items) |*tree| {
-                if (tree.height > maxHeight) {
-                    tree.visible = true;
-                    maxHeight = tree.height;
+    for (rows.items) |row, start_y| {
+        for (row.items) |*start_tree, start_x| {
+            { // L -> R
+                var x = start_x;
+                while (x < width - 1):(x += 1) {
+                    start_tree.distance_right += 1;
+                    if (row.items[x + 1].height >= start_tree.height) break;
                 }
             }
-        }
-        { // right to left
-            var maxHeight: i32 = -1;
-            var x: usize = width - 1;
-            while (true):(x -= 1) {
-                const tree = &row.items[x];
-                if (tree.height > maxHeight) {
-                    tree.visible = true;
-                    maxHeight = tree.height;
-                }
-                if (x == 0) break;
-            }
-        }
-    }
-    { // top to bottom
-        var x: usize = 0;
-        while (x < width):(x += 1) {
-            var maxHeight: i32 = -1;
-            for (rows.items) |row| {
-                const tree = &row.items[x];
-                if (tree.height > maxHeight) {
-                    tree.visible = true;
-                    maxHeight = tree.height;
+            { // R -> L
+                var x = start_x;
+                while (x > 0):(x -= 1) {
+                    start_tree.distance_left += 1;
+                    if (row.items[x - 1].height >= start_tree.height) break;
                 }
             }
-        }
-    }
-    { // bottom to top
-        var x: usize = 0;
-        while (x < width):(x += 1) {
-            var maxHeight: i32 = -1;
-            var y: usize = height - 1;
-            while (y >= 0):(y -= 1) {
-                const tree = &rows.items[y].items[x];
-                if (tree.height > maxHeight) {
-                    tree.visible = true;
-                    maxHeight = tree.height;
+            { // U -> D
+                var y = start_y;
+                while (y < height - 1):(y += 1) {
+                    start_tree.distance_down += 1;
+                    if (rows.items[y + 1].items[start_x].height >= start_tree.height) break;
                 }
-                if (y == 0) break;
+            }
+            { // D -> U
+                var y = start_y;
+                while (y > 0):(y -= 1) {
+                    start_tree.distance_up += 1;
+                    if (rows.items[y - 1].items[start_x].height >= start_tree.height) break;
+                }
             }
         }
     }
 
-    var visibleCount: u32 = 0;
+    var highScore: u32 = 0;
+
     for (rows.items) |row| {
         for (row.items) |tree| {
-            if (tree.visible) {
-                visibleCount += 1;
-                std.debug.print("{d}*", .{tree.height});
-            }
-            else {
-                std.debug.print("{d} ", .{tree.height});
-            }
+            const score = tree.distance_up * tree.distance_down * tree.distance_left * tree.distance_right;
+            highScore = @maximum(highScore, score);
+            std.debug.print("{d}", .{score});
         }
         std.debug.print("\n", .{});
     }
 
-    std.debug.print("{d} trees are visible.\n", .{visibleCount});
+    std.debug.print("highest score is {d}\n", .{highScore});
 }
 
 const Tree = struct {
     height: u8,
-    visible: bool,
+    distance_up: u32 = 0,
+    distance_down: u32 = 0,
+    distance_left: u32 = 0,
+    distance_right: u32 = 0,
 };
