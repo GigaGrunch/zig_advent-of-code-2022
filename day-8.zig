@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-8.txt");
+const input = @embedFile("real-input/day-8.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -61,9 +61,7 @@ pub fn main() !void {
         for (row.items) |tree| {
             const score = tree.distance_up * tree.distance_down * tree.distance_left * tree.distance_right;
             highScore = @maximum(highScore, score);
-            std.debug.print("{d}", .{score});
         }
-        std.debug.print("\n", .{});
     }
 
     std.debug.print("highest score is {d}\n", .{highScore});
