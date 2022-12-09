@@ -12,7 +12,8 @@ pub fn main() !void {
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| try rows.append(line);
 
-    for (rows.items) |row| {
-        std.debug.print("{s}\n", .{row});
-    }
+    const width = rows.items[0].len;
+    const height = rows.items.len;
+
+    std.debug.print("width = {d}, height = {d}\n", .{width, height});
 }
