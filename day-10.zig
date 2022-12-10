@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-10.txt");
+const input = @embedFile("real-input/day-10.txt");
 
 var cycle: i32 = 0;
 var x: i32 = 1;
