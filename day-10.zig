@@ -8,7 +8,8 @@ pub fn main() !void {
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
         if (std.mem.eql(u8, line[0..4], "addx")) {
-            x += 1;
+            const v = try std.fmt.parseInt(i32, line[5..], 10);
+            x += v;
             cycle += 2;
         }
         else if (std.mem.eql(u8, line[0..4], "noop")) {
