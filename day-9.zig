@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-9.2.txt");
+const input = @embedFile("real-input/day-9.txt");
 
 var alloc: std.mem.Allocator = undefined;
 
