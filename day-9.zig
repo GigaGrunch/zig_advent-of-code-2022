@@ -34,10 +34,8 @@ pub fn main() !void {
             const x_diff = h_pos.x - t_pos.x;
             const y_diff = h_pos.y - t_pos.y;
 
-            if (abs(x_diff) > 1 or (x_diff != 0 and abs(y_diff) > 1)) {
+            if (abs(x_diff) > 1 or abs(y_diff) > 1) {
                 t_pos.x += sign(x_diff);
-            }
-            if (abs(y_diff) > 1 or (y_diff != 0 and abs(x_diff) > 1)) {
                 t_pos.y += sign(y_diff);
             }
 
@@ -55,7 +53,9 @@ fn abs(value: i32) i32 {
 }
 
 fn sign(value: i32) i32 {
-    return if (value >= 0) 1 else -1;
+    if (value > 0) return 1;
+    if (value < 0) return -1;
+    return 0;
 }
 
 const Pos = struct {
