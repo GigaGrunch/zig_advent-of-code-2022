@@ -43,7 +43,7 @@ pub fn main() !void {
                 }
             }
 
-            // try visited.put(t_pos, undefined);
+            try visited.put(knots[knots.len-1], undefined);
 
             for (knots) |knot| try printPos(knot);
             try print("\n", .{});
