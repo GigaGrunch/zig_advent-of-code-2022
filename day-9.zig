@@ -20,6 +20,8 @@ pub fn main() !void {
     while (lines_it.next()) |line| {
         const dir = line[0];
         const count = line[2] - '0';
+
+        try print("{c} {d}\n", .{dir, count});
         
         var i: usize = 0;
         while (i < count):(i += 1) {
@@ -34,18 +36,24 @@ pub fn main() !void {
             const x_diff = h_pos.x - t_pos.x;
             const y_diff = h_pos.y - t_pos.y;
 
-            if (abs(x_diff) > 1 or abs(y_diff) > 1) {
+            const is_neighbor = (abs(x_diff) <= 1 and abs(y_diff) <= 1);
+
+            if (!is_neighbor) {
                 t_pos.x += sign(x_diff);
                 t_pos.y += sign(y_diff);
             }
 
             try visited.put(t_pos, undefined);
 
-            std.debug.print("H is at ({d},{d}), T is at ({d},{d})\n", .{h_pos.x, h_pos.y, t_pos.x, t_pos.y});
+            try print("H is at ({d},{d}), T is at ({d},{d})\n", .{h_pos.x, h_pos.y, t_pos.x, t_pos.y});
         }
     }
 
-    std.debug.print("visited positions = {d}\n", .{visited.count()});
+    try print("visited positions = {d}\n", .{visited.count()});
+}
+
+fn print(comptime format: []const u8, args: anytype) !void {
+    try std.io.getStdOut().writer().print(format, args);
 }
 
 fn abs(value: i32) i32 {
