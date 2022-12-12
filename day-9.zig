@@ -10,6 +10,9 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     alloc = gpa.allocator();
 
+    var visited = std.AutoHashMap(Pos, void).init(alloc);
+    defer visited.deinit();
+
     h_pos = .{ .x = 0, .y = 0 };
     t_pos = .{ .x = 0, .y = 0 };
 
@@ -38,9 +41,13 @@ pub fn main() !void {
                 t_pos.y += sign(y_diff);
             }
 
+            try visited.put(t_pos, undefined);
+
             std.debug.print("H is at ({d},{d}), T is at ({d},{d})\n", .{h_pos.x, h_pos.y, t_pos.x, t_pos.y});
         }
     }
+
+    std.debug.print("visited positions = {d}\n", .{visited.count()});
 }
 
 fn abs(value: i32) i32 {
