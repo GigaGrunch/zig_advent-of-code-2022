@@ -34,10 +34,10 @@ pub fn main() !void {
             const x_diff = h_pos.x - t_pos.x;
             const y_diff = h_pos.y - t_pos.y;
 
-            if (abs(x_diff) > 1 or (x_diff != 0 and y_diff != 0)) {
+            if (abs(x_diff) > 1 or (x_diff != 0 and abs(y_diff) > 1)) {
                 t_pos.x += sign(x_diff);
             }
-            if (abs(y_diff) > 1 or (y_diff != 0 and y_diff != 0)) {
+            if (abs(y_diff) > 1 or (y_diff != 0 and abs(x_diff) > 1)) {
                 t_pos.y += sign(y_diff);
             }
 
