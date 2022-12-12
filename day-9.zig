@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-9.txt");
+const input = @embedFile("real-input/day-9.txt");
 
 var alloc: std.mem.Allocator = undefined;
 var h_pos: Pos = undefined;
@@ -19,7 +19,7 @@ pub fn main() !void {
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
         const dir = line[0];
-        const count = line[2] - '0';
+        const count = try std.fmt.parseInt(i32, line[2..], 10);
 
         try print("{c} {d}\n", .{dir, count});
         
