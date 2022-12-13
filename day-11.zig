@@ -38,13 +38,20 @@ pub fn main() !void {
         std.debug.assert(std.mem.startsWith(u8, test_line, "  Test: divisible by "));
         const test_divisor = try std.fmt.parseInt(i32, test_line["  Test: divisible by ".len..], 10);
 
-        _ = lines_it.next().?;
-        _ = lines_it.next().?;
+        const true_line = lines_it.next().?;
+        std.debug.assert(std.mem.startsWith(u8, true_line, "    If true: throw to monkey "));
+        const true_monkey = try std.fmt.parseInt(usize, true_line["    If true: throw to monkey ".len..], 10);
+
+        const false_line = lines_it.next().?;
+        std.debug.assert(std.mem.startsWith(u8, false_line, "    If false: throw to monkey "));
+        const false_monkey = try std.fmt.parseInt(usize, false_line["    If false: throw to monkey ".len..], 10);
 
         var monkey = Monkey {
             .items = starting_items,
             .operation = operation,
             .test_divisor = test_divisor,
+            .true_monkey = true_monkey,
+            .false_monkey = false_monkey,
         };
 
         try monkeys.append(monkey);
@@ -72,6 +79,8 @@ pub fn main() !void {
         std.debug.print("\n", .{});
 
         std.debug.print("  Test: divisible by {d}\n", .{monkey.test_divisor});
+        std.debug.print("    If true: throw to monkey {d}\n", .{monkey.true_monkey});
+        std.debug.print("    If false: throw to monkey {d}\n", .{monkey.false_monkey});
 
         std.debug.print("\n", .{});
     }
@@ -81,6 +90,8 @@ const Monkey = struct {
     items: std.ArrayList(i32),
     operation: Operation,
     test_divisor: i32,
+    true_monkey: usize,
+    false_monkey: usize,
 
     pub fn deinit(monkey: *Monkey) void {
         monkey.items.deinit();
