@@ -34,13 +34,17 @@ pub fn main() !void {
             .b = if (std.mem.eql(u8, b_string, "old")) .{.old = undefined} else .{.number = try std.fmt.parseInt(i32, b_string, 10)},
         };
 
-        _ = lines_it.next().?;
+        const test_line = lines_it.next().?;
+        std.debug.assert(std.mem.startsWith(u8, test_line, "  Test: divisible by "));
+        const test_divisor = try std.fmt.parseInt(i32, test_line["  Test: divisible by ".len..], 10);
+
         _ = lines_it.next().?;
         _ = lines_it.next().?;
 
         var monkey = Monkey {
             .items = starting_items,
             .operation = operation,
+            .test_divisor = test_divisor,
         };
 
         try monkeys.append(monkey);
@@ -55,7 +59,7 @@ pub fn main() !void {
         }
         std.debug.print("\n", .{});
 
-        std.debug.print("Operation: new = ", .{});
+        std.debug.print("  Operation: new = ", .{});
         switch (monkey.operation.a) {
             .old => std.debug.print("old ", .{}),
             .number => |a| std.debug.print("{d} ", .{a}),
@@ -66,12 +70,17 @@ pub fn main() !void {
             .number => |b| std.debug.print("{d} ", .{b}),
         }
         std.debug.print("\n", .{});
+
+        std.debug.print("  Test: divisible by {d}\n", .{monkey.test_divisor});
+
+        std.debug.print("\n", .{});
     }
 }
 
 const Monkey = struct {
     items: std.ArrayList(i32),
     operation: Operation,
+    test_divisor: i32,
 
     pub fn deinit(monkey: *Monkey) void {
         monkey.items.deinit();
