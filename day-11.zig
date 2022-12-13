@@ -92,6 +92,7 @@ pub fn main() !void {
             // std.debug.print("Monkey {d}:\n", .{i});
             std.mem.reverse(i32, monkey.items.items);
             while (monkey.items.items.len > 0) {
+                monkey.inspections += 1;
                 var item = monkey.items.pop();
                 // std.debug.print("  Monkey inspects an item with a worry level of {d}.\n", .{item});
                 const b = switch (monkey.operation.b) {
@@ -132,6 +133,21 @@ pub fn main() !void {
         }
         std.debug.print("\n", .{});
     }
+
+    var top_inspections = [_]i32 {0} ** 2;
+    for (monkeys.items) |monkey, i| {
+        std.debug.print("Monkey {d} inspected items {d} times.\n", .{i, monkey.inspections});
+
+        if (monkey.inspections > top_inspections[0]) {
+            top_inspections[1] = top_inspections[0];
+            top_inspections[0] = monkey.inspections;
+        }
+        else if (monkey.inspections > top_inspections[1]) {
+            top_inspections[1] = monkey.inspections;
+        }
+    }
+
+    std.debug.print("Level of monkey business: {d} * {d} = {d}\n", .{top_inspections[0], top_inspections[1], top_inspections[0] * top_inspections[1]});
 }
 
 const Monkey = struct {
@@ -140,6 +156,7 @@ const Monkey = struct {
     test_divisor: i32,
     true_monkey: usize,
     false_monkey: usize,
+    inspections: i32 = 0,
 
     pub fn deinit(monkey: *Monkey) void {
         monkey.items.deinit();
