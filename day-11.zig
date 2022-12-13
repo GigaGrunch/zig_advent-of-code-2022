@@ -69,12 +69,12 @@ pub fn main() !void {
         std.debug.print("  Operation: new = ", .{});
         switch (monkey.operation.a) {
             .old => std.debug.print("old ", .{}),
-            .number => |a| std.debug.print("{d} ", .{a}),
+            .number => |number| std.debug.print("{d} ", .{number}),
         }
         std.debug.print("{c} ", .{monkey.operation.operator});
         switch (monkey.operation.b) {
             .old => std.debug.print("old ", .{}),
-            .number => |b| std.debug.print("{d} ", .{b}),
+            .number => |number| std.debug.print("{d} ", .{number}),
         }
         std.debug.print("\n", .{});
 
@@ -82,6 +82,54 @@ pub fn main() !void {
         std.debug.print("    If true: throw to monkey {d}\n", .{monkey.true_monkey});
         std.debug.print("    If false: throw to monkey {d}\n", .{monkey.false_monkey});
 
+        std.debug.print("\n", .{});
+    }
+
+    var round: i32 = 1;
+    while (round <= 20):(round += 1) {
+        for (monkeys.items) |*monkey, i| {
+            _ = i;
+            // std.debug.print("Monkey {d}:\n", .{i});
+            std.mem.reverse(i32, monkey.items.items);
+            while (monkey.items.items.len > 0) {
+                var item = monkey.items.pop();
+                // std.debug.print("  Monkey inspects an item with a worry level of {d}.\n", .{item});
+                const b = switch (monkey.operation.b) {
+                    .old => item,
+                    .number => |number| number,
+                };
+                switch (monkey.operation.operator) {
+                    '+' => {
+                        item += b;
+                        // std.debug.print("    Worry level increases by {d} to {d}.\n", .{b, item});
+                    },
+                    '*' => {
+                        item *= b;
+                        // std.debug.print("    Worry level is multiplied by {d} to {d}.\n", .{b, item});
+                    },
+                    else => unreachable
+                }
+                
+                item = @divFloor(item, 3);
+                // std.debug.print("    Monkey gets bored with item. Worry level is divided by 30 to {d}.\n", .{item});
+                if (@rem(item, monkey.test_divisor) == 0) {
+                    // std.debug.print("    Current worry level is divisible by {d}.\n", .{monkey.test_divisor});
+                    // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.true_monkey});
+                    try monkeys.items[monkey.true_monkey].items.append(item);
+                }
+                else {
+                    // std.debug.print("    Current worry level is not divisible by {d}.\n", .{monkey.test_divisor});
+                    // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.false_monkey});
+                    try monkeys.items[monkey.false_monkey].items.append(item);
+                }
+            }
+        }
+
+        for (monkeys.items) |monkey, i| {
+            std.debug.print("Monkey {d}: ", .{i});
+            for (monkey.items.items) |item| std.debug.print("{d}, ", .{item});
+            std.debug.print("\n", .{});
+        }
         std.debug.print("\n", .{});
     }
 }
