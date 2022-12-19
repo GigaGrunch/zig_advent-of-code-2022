@@ -1,6 +1,6 @@
 const std = @import("std");
 const input = @embedFile("test-input/day-11.txt");
-const big_int = std.math.big.int.Managed;
+const BigInt = std.math.big.int.Managed;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -8,29 +8,29 @@ pub fn main() !void {
     var alloc = gpa.allocator();
 
     var monkeys = std.ArrayList(Monkey).init(alloc);
-    defer {
-        for (monkeys.items) |*monkey| monkey.deinit();
-        monkeys.deinit();
-    }
+    defer monkeys.deinit();
 
-    var numbers = std.ArrayList(big_int).init(alloc);
+    var items = std.ArrayList(Item).init(alloc);
     defer {
-        for (numbers.items) |*number| number.deinit();
-        numbers.deinit();
+        for (items.items) |*item| item.deinit();
+        items.deinit();
     }
 
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
+        const monkey_index = monkeys.items.len;
+
         std.debug.assert(std.mem.startsWith(u8, line, "Monkey "));
 
         const starting_items_line = lines_it.next().?;
         std.debug.assert(std.mem.startsWith(u8, starting_items_line, "  Starting items: "));
-        var starting_items = std.ArrayList(usize).init(alloc);
         var starting_items_it = std.mem.tokenize(u8, starting_items_line["  Starting items:".len..], ", ");
         while (starting_items_it.next()) |item_str| {
             const item = try std.fmt.parseInt(i32, item_str, 10);
-            try starting_items.append(numbers.items.len);
-            try numbers.append(try std.math.big.int.Managed.initSet(alloc, item));
+            try items.append(.{
+                .worry_level = try std.math.big.int.Managed.initSet(alloc, item),
+                .monkey_index = monkey_index,
+            });
         }
 
         const operation_line = lines_it.next().?;
@@ -38,19 +38,14 @@ pub fn main() !void {
         var operation_it = std.mem.tokenize(u8, operation_line["  Operation: new = old ".len..], " ");
         const op = operation_it.next().?[0];
         const b_string = operation_it.next().?;
-        var operation = Operation {
-            .operator = op,
-            .b = undefined,
+        const operation = Operation {
+            .operator = switch (op) {
+                '+' => .Add,
+                '*' => .Multiply,
+                else => unreachable
+            },
+            .b = if (std.mem.eql(u8, b_string, "old")) .{.old = undefined} else .{.number = try std.fmt.parseInt(i32, b_string, 10)},
         };
-        if (std.mem.eql(u8, b_string, "old")) {
-            operation.b = .{.old = undefined};
-        }
-        else {
-            const number = try std.fmt.parseInt(i32, b_string, 10);
-            const index = numbers.items.len;
-            operation.b = .{.number = index};
-            try numbers.append(try std.math.big.int.Managed.initSet(alloc, number));
-        }
 
         const test_line = lines_it.next().?;
         std.debug.assert(std.mem.startsWith(u8, test_line, "  Test: divisible by "));
@@ -65,7 +60,6 @@ pub fn main() !void {
         const false_monkey = try std.fmt.parseInt(usize, false_line["    If false: throw to monkey ".len..], 10);
 
         var monkey = Monkey {
-            .items = starting_items,
             .operation = operation,
             .test_divisor = test_divisor,
             .true_monkey = true_monkey,
@@ -75,91 +69,49 @@ pub fn main() !void {
         try monkeys.append(monkey);
     }
 
-    for (monkeys.items) |monkey, i| {
-        std.debug.print("Monkey {d}:", .{i});
+    for (items.items) |*item| {
+        var worry_level = &item.worry_level;
 
-        std.debug.print("Starting items: ", .{});
-        for (monkey.items.items) |item| {
-            std.debug.print("{d}, ", .{item});
-        }
-        std.debug.print("\n", .{});
+        var round: u32 = 1;
+        while (round <= 10000) {
+            var monkey = &monkeys.items[item.monkey_index];
+            monkey.inspections += 1;
+            const operation = monkey.operation;
 
-        std.debug.print("  Operation: new = old ", .{});
-        std.debug.print("{c} ", .{monkey.operation.operator});
-        switch (monkey.operation.b) {
-            .old => std.debug.print("old ", .{}),
-            .number => |number| std.debug.print("{d} ", .{number}),
-        }
-        std.debug.print("\n", .{});
-
-        std.debug.print("  Test: divisible by {d}\n", .{monkey.test_divisor});
-        std.debug.print("    If true: throw to monkey {d}\n", .{monkey.true_monkey});
-        std.debug.print("    If false: throw to monkey {d}\n", .{monkey.false_monkey});
-
-        std.debug.print("\n", .{});
-    }
-
-    var round: i32 = 1;
-    while (round <= 1000):(round += 1) {
-        for (monkeys.items) |*monkey, i| {
-            _ = i;
-            // std.debug.print("Monkey {d}:\n", .{i});
-            std.mem.reverse(usize, monkey.items.items);
-            while (monkey.items.items.len > 0) {
-                monkey.inspections += 1;
-                const item_index = monkey.items.pop();
-                var item = &numbers.items[item_index];
-
-                // std.debug.print("  Monkey inspects an item with a worry level of {d}.\n", .{item});
-                const b_index = switch (monkey.operation.b) {
-                    .old => item_index,
-                    .number => |number| number,
-                };
-                var b = &numbers.items[b_index];
-
-                switch (monkey.operation.operator) {
-                    '+' => {
-                        try item.add(item, b);
-                        // std.debug.print("    Worry level increases by {d} to {d}.\n", .{b, item});
-                    },
-                    '*' => {
-                        try item.mul(item, b);
-                        // std.debug.print("    Worry level is multiplied by {d} to {d}.\n", .{b, item});
-                    },
-                    else => unreachable
-                }
-                
-                var div = try std.math.big.int.Managed.initSet(alloc, 0);
-                defer div.deinit();
-                var rem = try std.math.big.int.Managed.initSet(alloc, 0);
-                defer rem.deinit();
-                var divisor = try std.math.big.int.Managed.initSet(alloc, monkey.test_divisor);
-                defer divisor.deinit();
-
-                try div.divFloor(&rem, item, &divisor);
-
-                if (rem.eqZero()) {
-                    // std.debug.print("    Current worry level is divisible by {d}.\n", .{monkey.test_divisor});
-                    // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.true_monkey});
-                    try monkeys.items[monkey.true_monkey].items.append(item_index);
-                }
-                else {
-                    // std.debug.print("    Current worry level is not divisible by {d}.\n", .{monkey.test_divisor});
-                    // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.false_monkey});
-                    try monkeys.items[monkey.false_monkey].items.append(item_index);
+            switch (operation.operator) {
+                .Multiply => {
+                    switch (operation.b) {
+                        .old => try worry_level.mul(worry_level, worry_level),
+                        .number => |number| {
+                            var big = try BigInt.initSet(alloc, number);
+                            defer big.deinit();
+                            try worry_level.mul(worry_level, &big);
+                        }
+                    }
+                },
+                .Add => {
+                    switch (operation.b) {
+                        .old => try worry_level.add(worry_level, worry_level),
+                        .number => |number| try worry_level.addScalar(worry_level, number),
+                    }
                 }
             }
-        }
 
-        // for (monkeys.items) |monkey, i| {
-        //     std.debug.print("Monkey {d}: ", .{i});
-        //     for (monkey.items.items) |item| std.debug.print("{d}, ", .{item});
-        //     std.debug.print("\n", .{});
-        // }
-        // std.debug.print("\n", .{});
+            var div = try BigInt.init(alloc);
+            defer div.deinit();
+            var rem = try BigInt.init(alloc);
+            defer rem.deinit();
+            var divisor = try BigInt.initSet(alloc, monkey.test_divisor);
+            defer divisor.deinit();
+
+            try div.divFloor(&rem, worry_level, &divisor);
+            const new_index = if (div.eqZero()) monkey.true_monkey else monkey.false_monkey;
+            if (new_index < item.monkey_index) round += 1;
+            item.monkey_index = new_index;
+        }
     }
 
-    var top_inspections = [_]i32 {0} ** 2;
+    var top_inspections = [_]u64 {0} ** 2;
     for (monkeys.items) |monkey, i| {
         std.debug.print("Monkey {d} inspected items {d} times.\n", .{i, monkey.inspections});
 
@@ -175,20 +127,24 @@ pub fn main() !void {
     std.debug.print("Level of monkey business: {d} * {d} = {d}\n", .{top_inspections[0], top_inspections[1], top_inspections[0] * top_inspections[1]});
 }
 
+const Item = struct {
+    worry_level: BigInt,
+    monkey_index: usize,
+
+    pub fn deinit(this: *Item) void {
+        this.worry_level.deinit();
+    }
+};
+
 const Monkey = struct {
-    items: std.ArrayList(usize),
     operation: Operation,
     test_divisor: i32,
     true_monkey: usize,
     false_monkey: usize,
-    inspections: i32 = 0,
-
-    pub fn deinit(monkey: *Monkey) void {
-        monkey.items.deinit();
-    }
+    inspections: u64 = 0,
 };
 
 const Operation = struct {
-    operator: u8,
-    b: union(enum) { old: void, number: usize },
+    operator: enum { Multiply, Add },
+    b: union(enum) { old: void, number: i32 },
 };
