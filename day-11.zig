@@ -1,5 +1,6 @@
 const std = @import("std");
 const input = @embedFile("test-input/day-11.txt");
+const big_int = std.math.big.int.Managed;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -12,17 +13,24 @@ pub fn main() !void {
         monkeys.deinit();
     }
 
+    var numbers = std.ArrayList(big_int).init(alloc);
+    defer {
+        for (numbers.items) |*number| number.deinit();
+        numbers.deinit();
+    }
+
     var lines_it = std.mem.tokenize(u8, input, "\r\n");
     while (lines_it.next()) |line| {
         std.debug.assert(std.mem.startsWith(u8, line, "Monkey "));
 
         const starting_items_line = lines_it.next().?;
         std.debug.assert(std.mem.startsWith(u8, starting_items_line, "  Starting items: "));
-        var starting_items = std.ArrayList(std.math.big.int.Managed).init(alloc);
+        var starting_items = std.ArrayList(usize).init(alloc);
         var starting_items_it = std.mem.tokenize(u8, starting_items_line["  Starting items:".len..], ", ");
         while (starting_items_it.next()) |item_str| {
             const item = try std.fmt.parseInt(i32, item_str, 10);
-            try starting_items.append(try std.math.big.int.Managed.initSet(alloc, item));
+            try starting_items.append(numbers.items.len);
+            try numbers.append(try std.math.big.int.Managed.initSet(alloc, item));
         }
 
         const operation_line = lines_it.next().?;
@@ -30,10 +38,19 @@ pub fn main() !void {
         var operation_it = std.mem.tokenize(u8, operation_line["  Operation: new = old ".len..], " ");
         const op = operation_it.next().?[0];
         const b_string = operation_it.next().?;
-        const operation = Operation {
+        var operation = Operation {
             .operator = op,
-            .b = if (std.mem.eql(u8, b_string, "old")) .{.old = undefined} else .{.number = try std.math.big.int.Managed.initSet(alloc, try std.fmt.parseInt(i32, b_string, 10))},
+            .b = undefined,
         };
+        if (std.mem.eql(u8, b_string, "old")) {
+            operation.b = .{.old = undefined};
+        }
+        else {
+            const number = try std.fmt.parseInt(i32, b_string, 10);
+            const index = numbers.items.len;
+            operation.b = .{.number = index};
+            try numbers.append(try std.math.big.int.Managed.initSet(alloc, number));
+        }
 
         const test_line = lines_it.next().?;
         std.debug.assert(std.mem.startsWith(u8, test_line, "  Test: divisible by "));
@@ -83,26 +100,30 @@ pub fn main() !void {
     }
 
     var round: i32 = 1;
-    while (round <= 100):(round += 1) {
+    while (round <= 1000):(round += 1) {
         for (monkeys.items) |*monkey, i| {
             _ = i;
             // std.debug.print("Monkey {d}:\n", .{i});
-            std.mem.reverse(std.math.big.int.Managed, monkey.items.items);
+            std.mem.reverse(usize, monkey.items.items);
             while (monkey.items.items.len > 0) {
                 monkey.inspections += 1;
-                var item = monkey.items.pop();
+                const item_index = monkey.items.pop();
+                var item = &numbers.items[item_index];
+
                 // std.debug.print("  Monkey inspects an item with a worry level of {d}.\n", .{item});
-                const b = switch (monkey.operation.b) {
-                    .old => &item,
-                    .number => |*number| number,
+                const b_index = switch (monkey.operation.b) {
+                    .old => item_index,
+                    .number => |number| number,
                 };
+                var b = &numbers.items[b_index];
+
                 switch (monkey.operation.operator) {
                     '+' => {
-                        try item.add(&item, b);
+                        try item.add(item, b);
                         // std.debug.print("    Worry level increases by {d} to {d}.\n", .{b, item});
                     },
                     '*' => {
-                        try item.mul(&item, b);
+                        try item.mul(item, b);
                         // std.debug.print("    Worry level is multiplied by {d} to {d}.\n", .{b, item});
                     },
                     else => unreachable
@@ -115,17 +136,17 @@ pub fn main() !void {
                 var divisor = try std.math.big.int.Managed.initSet(alloc, monkey.test_divisor);
                 defer divisor.deinit();
 
-                try div.divFloor(&rem, &item, &divisor);
+                try div.divFloor(&rem, item, &divisor);
 
                 if (rem.eqZero()) {
                     // std.debug.print("    Current worry level is divisible by {d}.\n", .{monkey.test_divisor});
                     // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.true_monkey});
-                    try monkeys.items[monkey.true_monkey].items.append(item);
+                    try monkeys.items[monkey.true_monkey].items.append(item_index);
                 }
                 else {
                     // std.debug.print("    Current worry level is not divisible by {d}.\n", .{monkey.test_divisor});
                     // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.false_monkey});
-                    try monkeys.items[monkey.false_monkey].items.append(item);
+                    try monkeys.items[monkey.false_monkey].items.append(item_index);
                 }
             }
         }
@@ -155,7 +176,7 @@ pub fn main() !void {
 }
 
 const Monkey = struct {
-    items: std.ArrayList(std.math.big.int.Managed),
+    items: std.ArrayList(usize),
     operation: Operation,
     test_divisor: i32,
     true_monkey: usize,
@@ -163,16 +184,11 @@ const Monkey = struct {
     inspections: i32 = 0,
 
     pub fn deinit(monkey: *Monkey) void {
-        for (monkey.items.items) |*item| item.deinit();
-        switch (monkey.operation.b) {
-            .old => { },
-            .number => |*number| number.deinit(),
-        }
         monkey.items.deinit();
     }
 };
 
 const Operation = struct {
     operator: u8,
-    b: union(enum) { old: void, number: std.math.big.int.Managed },
+    b: union(enum) { old: void, number: usize },
 };
