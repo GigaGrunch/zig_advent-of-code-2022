@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-11.txt");
+const input = @embedFile("test-input/day-11.txt");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -86,7 +86,7 @@ pub fn main() !void {
     }
 
     var round: i32 = 1;
-    while (round <= 20):(round += 1) {
+    while (round <= 10000):(round += 1) {
         for (monkeys.items) |*monkey, i| {
             _ = i;
             // std.debug.print("Monkey {d}:\n", .{i});
@@ -111,8 +111,6 @@ pub fn main() !void {
                     else => unreachable
                 }
                 
-                item = @divFloor(item, 3);
-                // std.debug.print("    Monkey gets bored with item. Worry level is divided by 30 to {d}.\n", .{item});
                 if (@rem(item, monkey.test_divisor) == 0) {
                     // std.debug.print("    Current worry level is divisible by {d}.\n", .{monkey.test_divisor});
                     // std.debug.print("    Item with worry level {d} is thrown to monkey {d}.\n", .{item, monkey.true_monkey});
