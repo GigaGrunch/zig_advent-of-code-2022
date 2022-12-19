@@ -26,14 +26,12 @@ pub fn main() !void {
         }
 
         const operation_line = lines_it.next().?;
-        std.debug.assert(std.mem.startsWith(u8, operation_line, "  Operation: new = "));
-        var operation_it = std.mem.tokenize(u8, operation_line["  Operation: new = ".len..], " ");
-        const a_string = operation_it.next().?;
+        std.debug.assert(std.mem.startsWith(u8, operation_line, "  Operation: new = old "));
+        var operation_it = std.mem.tokenize(u8, operation_line["  Operation: new = old ".len..], " ");
         const op = operation_it.next().?[0];
         const b_string = operation_it.next().?;
         const operation = Operation {
             .operator = op,
-            .a = if (std.mem.eql(u8, a_string, "old")) .{.old = undefined} else .{.number = try std.math.big.int.Managed.initSet(alloc, try std.fmt.parseInt(i32, a_string, 10))},
             .b = if (std.mem.eql(u8, b_string, "old")) .{.old = undefined} else .{.number = try std.math.big.int.Managed.initSet(alloc, try std.fmt.parseInt(i32, b_string, 10))},
         };
 
@@ -69,11 +67,7 @@ pub fn main() !void {
         }
         std.debug.print("\n", .{});
 
-        std.debug.print("  Operation: new = ", .{});
-        switch (monkey.operation.a) {
-            .old => std.debug.print("old ", .{}),
-            .number => |number| std.debug.print("{d} ", .{number}),
-        }
+        std.debug.print("  Operation: new = old ", .{});
         std.debug.print("{c} ", .{monkey.operation.operator});
         switch (monkey.operation.b) {
             .old => std.debug.print("old ", .{}),
@@ -89,7 +83,7 @@ pub fn main() !void {
     }
 
     var round: i32 = 1;
-    while (round <= 1000):(round += 1) {
+    while (round <= 100):(round += 1) {
         for (monkeys.items) |*monkey, i| {
             _ = i;
             // std.debug.print("Monkey {d}:\n", .{i});
@@ -170,10 +164,6 @@ const Monkey = struct {
 
     pub fn deinit(monkey: *Monkey) void {
         for (monkey.items.items) |*item| item.deinit();
-        switch (monkey.operation.a) {
-            .old => { },
-            .number => |*number| number.deinit(),
-        }
         switch (monkey.operation.b) {
             .old => { },
             .number => |*number| number.deinit(),
@@ -184,6 +174,5 @@ const Monkey = struct {
 
 const Operation = struct {
     operator: u8,
-    a: union(enum) { old: void, number: std.math.big.int.Managed },
     b: union(enum) { old: void, number: std.math.big.int.Managed },
 };
