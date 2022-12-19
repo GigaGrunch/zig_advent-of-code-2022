@@ -73,7 +73,7 @@ pub fn main() !void {
         var worry_level = &item.worry_level;
 
         var round: u32 = 1;
-        while (round <= 20) {
+        while (round <= 100) {
             var monkey = &monkeys.items[item.monkey_index];
             monkey.inspections += 1;
             const operation = monkey.operation;
@@ -101,12 +101,8 @@ pub fn main() !void {
             defer div.deinit();
             var rem = try BigInt.init(alloc);
             defer rem.deinit();
-            var divisor = try BigInt.initSet(alloc, 3);
-            defer divisor.deinit();
             var test_divisor = try BigInt.initSet(alloc, monkey.test_divisor);
             defer test_divisor.deinit();
-
-            try worry_level.divFloor(&rem, worry_level, &divisor);
 
             try div.divFloor(&rem, worry_level, &test_divisor);
             const new_index = if (rem.eqZero()) monkey.true_monkey else monkey.false_monkey;
