@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("test-input/day-12.txt");
+const input = @embedFile("real-input/day-12.txt");
 
 var width: usize = undefined;
 var height: usize = undefined;
