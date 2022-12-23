@@ -1,6 +1,5 @@
 const std = @import("std");
 const input = @embedFile("test-input/day-11.txt");
-const BigInt = std.math.big.int.Managed;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -12,7 +11,7 @@ pub fn main() !void {
 
     var items = std.ArrayList(Item).init(alloc);
     defer {
-        for (items.items) |*item| item.deinit();
+        for (items.items) |*item| item.rems.deinit();
         items.deinit();
     }
 
@@ -28,8 +27,9 @@ pub fn main() !void {
         while (starting_items_it.next()) |item_str| {
             const item = try std.fmt.parseInt(i32, item_str, 10);
             try items.append(.{
-                .worry_level = try std.math.big.int.Managed.initSet(alloc, item),
                 .monkey_index = monkey_index,
+                .initial_value = item,
+                .rems = std.ArrayList(i32).init(alloc),
             });
         }
 
@@ -69,11 +69,17 @@ pub fn main() !void {
         try monkeys.append(monkey);
     }
 
-    for (items.items) |*item| {
-        var worry_level = &item.worry_level;
 
+    for (items.items) |*item| {
+        const rem = item.initial_value;
+        for (monkeys.items) |monkey| {
+            try item.rems.append(@rem(rem, monkey.test_divisor));
+        }
+    }
+
+    for (items.items) |*item| {
         var round: u32 = 1;
-        while (round <= 100) {
+        while (round <= 10000) {
             var monkey = &monkeys.items[item.monkey_index];
             monkey.inspections += 1;
             const operation = monkey.operation;
@@ -81,31 +87,42 @@ pub fn main() !void {
             switch (operation.operator) {
                 .Multiply => {
                     switch (operation.b) {
-                        .old => try worry_level.mul(worry_level, worry_level),
+                        .old => {
+                            for (item.rems.items) |*rem, i| {
+                                const old = rem.*;
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                                rem.* *= old;
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                            }
+                        },
                         .number => |number| {
-                            var big = try BigInt.initSet(alloc, number);
-                            defer big.deinit();
-                            try worry_level.mul(worry_level, &big);
-                        }
+                            for (item.rems.items) |*rem, i| {
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                                rem.* *= number;
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                            }
+                        },
                     }
                 },
                 .Add => {
                     switch (operation.b) {
-                        .old => try worry_level.add(worry_level, worry_level),
-                        .number => |number| try worry_level.addScalar(worry_level, number),
+                        .old => {
+                            for (item.rems.items) |*rem, i| {
+                                rem.* += rem.*;
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                            }
+                        },
+                        .number => |number| {
+                            for (item.rems.items) |*rem, i| {
+                                rem.* += number;
+                                rem.* = @rem(rem.*, monkeys.items[i].test_divisor);
+                            }
+                        },
                     }
                 }
             }
 
-            var div = try BigInt.init(alloc);
-            defer div.deinit();
-            var rem = try BigInt.init(alloc);
-            defer rem.deinit();
-            var test_divisor = try BigInt.initSet(alloc, monkey.test_divisor);
-            defer test_divisor.deinit();
-
-            try div.divFloor(&rem, worry_level, &test_divisor);
-            const new_index = if (rem.eqZero()) monkey.true_monkey else monkey.false_monkey;
+            const new_index = if (item.rems.items[item.monkey_index] == 0) monkey.true_monkey else monkey.false_monkey;
             if (new_index < item.monkey_index) round += 1;
             item.monkey_index = new_index;
         }
@@ -128,12 +145,9 @@ pub fn main() !void {
 }
 
 const Item = struct {
-    worry_level: BigInt,
     monkey_index: usize,
-
-    pub fn deinit(this: *Item) void {
-        this.worry_level.deinit();
-    }
+    initial_value: i32,
+    rems: std.ArrayList(i32),
 };
 
 const Monkey = struct {
