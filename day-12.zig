@@ -1,5 +1,5 @@
 const std = @import("std");
-const input = @embedFile("real-input/day-12.txt");
+const input = @embedFile("test-input/day-12.txt");
 
 var width: usize = undefined;
 var height: usize = undefined;
@@ -17,7 +17,8 @@ pub fn main() !void {
     }
 
     var goal_pos: Pos = undefined;
-    var start_pos: Pos = undefined;
+    var start_positions = std.ArrayList(Pos).init(alloc);
+    defer start_positions.deinit();
 
     var lines_it = std.mem.tokenize(u8, input, "\n\r");
     var y: usize = 0;
@@ -27,11 +28,15 @@ pub fn main() !void {
             switch (char) {
                 'S' => {
                     try rows.items[y].append('a');
-                    start_pos = .{ .x = x, .y = y };
+                    try start_positions.append(.{ .x = x, .y = y });
                 },
                 'E' => {
                     try rows.items[y].append('z');
                     goal_pos = .{ .x = x, .y = y };
+                },
+                'a' => {
+                    try rows.items[y].append(char);
+                    try start_positions.append(.{ .x = x, .y = y });
                 },
                 else => try rows.items[y].append(char)
             }
@@ -48,31 +53,37 @@ pub fn main() !void {
     var visited = std.AutoHashMap(Pos, u32).init(alloc);
     defer visited.deinit();
 
-    var frontier = std.ArrayList(Step).init(alloc);
-    defer frontier.deinit();
+    var shortest: u32 = 99999;
+    for (start_positions.items) |start_pos| {
+        var frontier = std.ArrayList(Step).init(alloc);
+        defer frontier.deinit();
 
-    try visited.put(start_pos, 0);
-    if (leftOf(start_pos)) |left| try frontier.append(left);
-    if (rightOf(start_pos)) |right| try frontier.append(right);
-    if (bottomOf(start_pos)) |bottom| try frontier.append(bottom);
-    if (topOf(start_pos)) |top| try frontier.append(top);
-    while (frontier.items.len > 0) {
-        const step = frontier.pop();
-        const step_count = visited.get(step.from).? + 1;
-        if (visited.get(step.to)) |previous_step_count| {
-            if (step_count >= previous_step_count) continue;
+        try visited.put(start_pos, 0);
+        if (leftOf(start_pos)) |left| try frontier.append(left);
+        if (rightOf(start_pos)) |right| try frontier.append(right);
+        if (bottomOf(start_pos)) |bottom| try frontier.append(bottom);
+        if (topOf(start_pos)) |top| try frontier.append(top);
+        while (frontier.items.len > 0) {
+            const step = frontier.pop();
+            const step_count = visited.get(step.from).? + 1;
+            if (visited.get(step.to)) |previous_step_count| {
+                if (step_count >= previous_step_count) continue;
+            }
+            try visited.put(step.to, step_count);
+
+            if (leftOf(step.to)) |left| try frontier.append(left);
+            if (rightOf(step.to)) |right| try frontier.append(right);
+            if (bottomOf(step.to)) |bottom| try frontier.append(bottom);
+            if (topOf(step.to)) |top| try frontier.append(top);
         }
-        try visited.put(step.to, step_count);
 
-        if (leftOf(step.to)) |left| try frontier.append(left);
-        if (rightOf(step.to)) |right| try frontier.append(right);
-        if (bottomOf(step.to)) |bottom| try frontier.append(bottom);
-        if (topOf(step.to)) |top| try frontier.append(top);
+        if (visited.get(goal_pos)) |steps| {
+            std.debug.print("{d} steps\n", .{steps});
+            if (steps < shortest) shortest = steps;
+        }
     }
 
-    if (visited.get(goal_pos)) |steps| {
-        std.debug.print("{d} steps\n", .{steps});
-    }
+    std.debug.print("shortest = {d}\n", .{shortest});
 }
 
 fn canBeTraversed(from: Pos, to: Pos) bool {
