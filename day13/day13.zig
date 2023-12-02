@@ -23,49 +23,29 @@ pub fn main() !void {
     std.debug.print("file has {d} bytes\n", .{text.len});
 
     lists = std.ArrayList(*List).init(gpa.allocator());
-    defer lists.deinit();
-
-    var pair_index: i32 = 1;
-    var sum: i32 = 0;
-
-    var lines = std.mem.tokenizeAny(u8, text, "\r\n");
-    while (lines.next()) |first_line| {
-        var root_1: *List = undefined;
-        {
-            var parts = ValueIterator.init(first_line);
-            std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
-            root_1 = try parseList(&parts);
-        }
-        var root_2: *List = undefined;
-        {
-            const second_line = lines.next().?;
-
-            var parts = ValueIterator.init(second_line);
-            std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
-            root_2 = try parseList(&parts);
-        }
-
-        printList(root_1);
-        std.debug.print("\n", .{});
-        printList(root_2);
-        std.debug.print("\n", .{});
-
-        if ((try areInRightOrder(.{.list = root_1}, .{.list = root_2}, 0)).?) {
-            sum += pair_index;
-        }
-
-        std.debug.print("\n", .{});
-
+    defer {
         for (lists.items) |list| {
             list.deinit();
             gpa.allocator().destroy(list);
         }
-        lists.clearRetainingCapacity();
-
-        pair_index += 1;
+        lists.deinit();
     }
 
-    std.debug.print("final sum: {d}\n", .{sum});
+    var packets = std.ArrayList(*List).init(gpa.allocator());
+    defer packets.deinit();
+
+    var lines = std.mem.tokenizeAny(u8, text, "\r\n");
+    while (lines.next()) |line| {
+        var parts = ValueIterator.init(line);
+        std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
+        var list = try parseList(&parts);
+        try packets.append(list);
+    }
+
+    for (packets.items) |list| {
+        printList(list);
+        std.debug.print("\n", .{});
+    }
 }
 
 fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
