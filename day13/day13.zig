@@ -25,6 +25,9 @@ pub fn main() !void {
     lists = std.ArrayList(*List).init(gpa.allocator());
     defer lists.deinit();
 
+    var pair_index: i32 = 1;
+    var sum: i32 = 0;
+
     var lines = std.mem.tokenizeAny(u8, text, "\r\n");
     while (lines.next()) |first_line| {
         var root_1: *List = undefined;
@@ -47,7 +50,9 @@ pub fn main() !void {
         printList(root_2);
         std.debug.print("\n", .{});
 
-        _ = try areInRightOrder(.{.list = root_1}, .{.list = root_2}, 0);
+        if ((try areInRightOrder(.{.list = root_1}, .{.list = root_2}, 0)).?) {
+            sum += pair_index;
+        }
 
         std.debug.print("\n", .{});
 
@@ -56,7 +61,11 @@ pub fn main() !void {
             gpa.allocator().destroy(list);
         }
         lists.clearRetainingCapacity();
+
+        pair_index += 1;
     }
+
+    std.debug.print("final sum: {d}\n", .{sum});
 }
 
 fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
