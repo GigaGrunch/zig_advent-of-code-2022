@@ -45,13 +45,88 @@ pub fn main() !void {
         printList(root_1);
         std.debug.print("\n", .{});
         printList(root_2);
-        std.debug.print("\n\n", .{});
+        std.debug.print("\n", .{});
+
+        _ = try areInRightOrder(.{.list = root_1}, .{.list = root_2}, 0);
+
+        std.debug.print("\n", .{});
 
         for (lists.items) |list| {
             list.deinit();
             gpa.allocator().destroy(list);
         }
         lists.clearRetainingCapacity();
+    }
+}
+
+fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
+    switch (a) {
+        .number => |number_a| switch (b) {
+            .number => |number_b| {
+                if (number_a < number_b) {
+                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("{d} is smaller than {d} -> right order\n", .{number_a, number_b});
+                    return true;
+                }
+                else if (number_a > number_b) {
+                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("{d} is larger than {d} -> wrong order\n", .{number_a, number_b});
+                    return false;
+                }
+                else {
+                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("{d} is equal to {d} -> undecided\n", .{number_a, number_b});
+                    return null;
+                }
+            },
+            .list => {
+                var list_a = try lists.allocator.create(List);
+                list_a.* = List.init(lists.allocator);
+                try lists.append(list_a);
+                try list_a.append(.{.number = number_a});
+                return try areInRightOrder(.{.list = list_a}, b, indent + 2);
+            },
+        },
+        .list => |list_a| switch (b) {
+            .number => |number_b| {
+                var list_b = try lists.allocator.create(List);
+                list_b.* = List.init(lists.allocator);
+                try lists.append(list_b);
+                try list_b.append(.{.number = number_b});
+                return try areInRightOrder(a, .{.list = list_b}, indent + 2);
+            },
+            .list => |list_b| {
+                {
+                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("checking lists...\n", .{});
+                }
+
+                var index: usize = 0;
+                while (index < list_a.items.len) : (index += 1) {
+                    if (index >= list_b.items.len) {
+                        var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
+                        std.debug.print("right list ran out of elements -> wrong order\n", .{});
+                        return false;
+                    }
+
+                    if (try areInRightOrder(list_a.items[index], list_b.items[index], indent + 4)) |right_order| {
+                        return right_order;
+                    }
+                }
+
+                if (index < list_b.items.len) {
+                    var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("left list ran out of elements -> right order\n", .{});
+                    return true;
+                }
+
+                {
+                    var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
+                    std.debug.print("lists are equal -> undecided\n", .{});
+                    return null;
+                }
+            },
+        },
     }
 }
 
