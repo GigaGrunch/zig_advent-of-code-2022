@@ -42,29 +42,43 @@ pub fn main() !void {
         try packets.append(list);
     }
 
-    for (packets.items) |list| {
-        printList(list);
+    const extra_lines: []const []const u8 = &.{"[[2]]", "[[6]]"};
+
+    for (extra_lines) |line| {
+        var parts = ValueIterator.init(line);
+        std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
+        var list = try parseList(&parts);
+        try packets.append(list);
+    }
+
+    for (packets.items) |_| {
+        var i: usize = 1;
+        while (i < packets.items.len):(i += 1) {
+            if (!(try areInRightOrder(.{.list = packets.items[i - 1]}, .{.list = packets.items[i]})).?) {
+                var temp = packets.items[i];
+                packets.items[i] = packets.items[i - 1];
+                packets.items[i - 1] = temp;
+            }
+        }
+    }
+
+    for (packets.items) |packet| {
+        printList(packet);
         std.debug.print("\n", .{});
     }
 }
 
-fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
+fn areInRightOrder(a: Value, b: Value) !?bool {
     switch (a) {
         .number => |number_a| switch (b) {
             .number => |number_b| {
                 if (number_a < number_b) {
-                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("{d} is smaller than {d} -> right order\n", .{number_a, number_b});
                     return true;
                 }
                 else if (number_a > number_b) {
-                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("{d} is larger than {d} -> wrong order\n", .{number_a, number_b});
                     return false;
                 }
                 else {
-                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("{d} is equal to {d} -> undecided\n", .{number_a, number_b});
                     return null;
                 }
             },
@@ -73,7 +87,7 @@ fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
                 list_a.* = List.init(lists.allocator);
                 try lists.append(list_a);
                 try list_a.append(.{.number = number_a});
-                return try areInRightOrder(.{.list = list_a}, b, indent + 2);
+                return try areInRightOrder(.{.list = list_a}, b);
             },
         },
         .list => |list_a| switch (b) {
@@ -82,38 +96,25 @@ fn areInRightOrder(a: Value, b: Value, indent: i32) !?bool {
                 list_b.* = List.init(lists.allocator);
                 try lists.append(list_b);
                 try list_b.append(.{.number = number_b});
-                return try areInRightOrder(a, .{.list = list_b}, indent + 2);
+                return try areInRightOrder(a, .{.list = list_b});
             },
             .list => |list_b| {
-                {
-                    var i: i32 = 0; while (i < indent):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("checking lists...\n", .{});
-                }
-
                 var index: usize = 0;
                 while (index < list_a.items.len) : (index += 1) {
                     if (index >= list_b.items.len) {
-                        var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
-                        std.debug.print("right list ran out of elements -> wrong order\n", .{});
                         return false;
                     }
 
-                    if (try areInRightOrder(list_a.items[index], list_b.items[index], indent + 4)) |right_order| {
+                    if (try areInRightOrder(list_a.items[index], list_b.items[index])) |right_order| {
                         return right_order;
                     }
                 }
 
                 if (index < list_b.items.len) {
-                    var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("left list ran out of elements -> right order\n", .{});
                     return true;
                 }
 
-                {
-                    var i: i32 = 0; while (i < indent + 2):(i += 1) { std.debug.print(" ", .{}); }
-                    std.debug.print("lists are equal -> undecided\n", .{});
-                    return null;
-                }
+                return null;
             },
         },
     }
