@@ -42,13 +42,20 @@ pub fn main() !void {
         try packets.append(list);
     }
 
-    const extra_lines: []const []const u8 = &.{"[[2]]", "[[6]]"};
-
-    for (extra_lines) |line| {
-        var parts = ValueIterator.init(line);
+    var divider_packet_1: *List = undefined;
+    {
+        var parts = ValueIterator.init("[[2]]");
         std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
-        var list = try parseList(&parts);
-        try packets.append(list);
+        divider_packet_1 = try parseList(&parts);
+        try packets.append(divider_packet_1);
+    }
+
+    var divider_packet_2: *List = undefined;
+    {
+        var parts = ValueIterator.init("[[6]]");
+        std.debug.assert(std.mem.eql(u8, parts.next().?, "["));
+        divider_packet_2 = try parseList(&parts);
+        try packets.append(divider_packet_2);
     }
 
     for (packets.items) |_| {
@@ -62,10 +69,16 @@ pub fn main() !void {
         }
     }
 
-    for (packets.items) |packet| {
+    var result: usize = 1;
+    for (packets.items, 0..) |packet, i| {
         printList(packet);
+        if (packet == divider_packet_1 or packet == divider_packet_2) {
+            result *= i + 1;
+        }
         std.debug.print("\n", .{});
     }
+
+    std.debug.print("result: {d}\n", .{result});
 }
 
 fn areInRightOrder(a: Value, b: Value) !?bool {
